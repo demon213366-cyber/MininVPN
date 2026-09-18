@@ -1,0 +1,47 @@
+name: MiniN VPN Build
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract MiniN source
+        run: |
+          mkdir -p minin-source
+          unzip -q MiniN-VPN-v0.6-github-actions.zip -d minin-source
+          echo "Source extracted:"
+          ls -la minin-source
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Build Android APK
+        working-directory: minin-source/client/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --stacktrace --no-daemon
+
+      - name: Find APK
+        run: |
+          mkdir -p apk
+          find minin-source -type f -name "*.apk" -exec cp {} apk/ \;
+          ls -lh apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MiniN-VPN-debug
+          path: apk/*.apk
+          if-no-files-found: error
